@@ -1,53 +1,85 @@
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
-public class PlayerCountroller : MonoBehaviour
+[RequireComponent(typeof(Rigidbody2D))]
+public class PlayerController : MonoBehaviour
 {
-    public float speed = 1f;
+    public float speed = 5f;
+    public float dashSpeed = 500f;
+    public float dashDuration = 20f;
+    public float dashCooldown = 1f;
 
-    Vector3 move;
+    private Vector2 move;
+    private Vector2 dashDirection;
 
-    // Start is called before the first frame update
+    private bool isDashing = false;
+    private float dashTime;
+    private float dashCooldownTimer;
+
+    private bool isInvincible = false;
+
+    private Rigidbody2D rb;
+    private SpriteRenderer sprite;
+
     void Start()
     {
-        
+        rb = GetComponent<Rigidbody2D>();
+        sprite = GetComponent<SpriteRenderer>();
     }
 
-    // Update is called once per frame
     void Update()
     {
-        move = Vector3.zero;
+        // 쿨다운 타이머 감소
+        if (dashCooldownTimer > 0f)
+            dashCooldownTimer -= Time.deltaTime;
 
-        if (Input.GetKey(KeyCode.A))
-            move += new Vector3(-1, 0, 0);
-        if (Input.GetKey(KeyCode.D))
-            move += new Vector3(1, 0, 0);
-        if (Input.GetKey(KeyCode.W))
-            move += new Vector3(0, 1, 0);
-        if (Input.GetKey(KeyCode.S))
-            move += new Vector3(0, -1, 0);
-
-        move = move.normalized;
-
-        if (move.x < 0)
-            GetComponent<SpriteRenderer>().flipX = true;
-        else if (move.x > 0)
-            GetComponent<SpriteRenderer>().flipX = false;
-
-        //�ִϸ��̼�
-        if(move.magnitude > 0)
+        if (!isDashing)
         {
-            GetComponent<Animator>().SetTrigger("Move");
+            move = Vector2.zero;
+
+            if (Input.GetKey(KeyCode.A)) move += Vector2.left;
+            if (Input.GetKey(KeyCode.D)) move += Vector2.right;
+            if (Input.GetKey(KeyCode.W)) move += Vector2.up;
+            if (Input.GetKey(KeyCode.S)) move += Vector2.down;
+
+            move = move.normalized;
+
+            if (move.x < 0) sprite.flipX = true;
+            else if (move.x > 0) sprite.flipX = false;
+
+            // 대시 시작 조건
+            if (Input.GetKeyDown(KeyCode.LeftShift) && dashCooldownTimer <= 0f && move != Vector2.zero)
+            {
+                Debug.Log("대시 시작!");
+                isDashing = true;
+                isInvincible = true;
+                dashDirection = move;
+                dashTime = dashDuration;
+                dashCooldownTimer = dashCooldown;
+            }
+        }
+    }
+
+    void FixedUpdate()
+    {
+        if (isDashing)
+        {
+            rb.velocity = dashDirection * dashSpeed;
+            dashTime -= Time.fixedDeltaTime;
+
+            if (dashTime <= 0f)
+            {
+                isDashing = false;
+                isInvincible = false;
+            }
         }
         else
         {
-            GetComponent<Animator>().SetTrigger("Stop");
+            rb.velocity = move * speed;
         }
     }
 
-    private void FixedUpdate()
+    public bool IsInvincible()
     {
-        transform.Translate(move * speed * Time.fixedDeltaTime);
+        return isInvincible;
     }
 }
