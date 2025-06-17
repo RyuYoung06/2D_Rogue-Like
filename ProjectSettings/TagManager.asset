@@ -54,3 +54,6 @@ TagManager:
   - name: Effet
     uniqueID: 1080678671
     locked: 0
+  - name: Door
+    uniqueID: 3092084585
+    locked: 0

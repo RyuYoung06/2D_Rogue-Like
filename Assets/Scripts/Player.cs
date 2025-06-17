@@ -1,24 +1,17 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.SocialPlatforms.Impl;
-using UnityEngine.U2D;
 
 public class Player : MonoBehaviour
 {
-    float mvoeSpeed = 2f;
-
-    
-    Rigidbody2D rb;
-    SpriteRenderer sR;
-
-    //총알
-    public GameObject bulletPrefab;
-
     public float speed = 5f;
-    public float dashSpeed = 500f;
-    public float dashDuration = 20f;
+    public float dashSpeed = 10f; // 조정된 대시 속도
+    public float dashDuration = 0.2f; // 초 단위
     public float dashCooldown = 1f;
+
+    private Rigidbody2D rb;
+    private SpriteRenderer sprite;
+    private Animator anim;
 
     private Vector2 move;
     private Vector2 dashDirection;
@@ -29,32 +22,44 @@ public class Player : MonoBehaviour
 
     private bool isInvincible = false;
 
-    
-    private SpriteRenderer sprite;
+    public GameObject bulletPrefab;
 
-    private Animator anim;
-
-    Vector2 input;
-    Vector2 velocity;
-
-    public GameObject DashEffect;
+    //이펙트 생성 
+    public GameObject dashEffectPrefab;
 
     private void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
-        sR = GetComponent<SpriteRenderer>();
-        rb.bodyType = RigidbodyType2D.Kinematic;
+        sprite = GetComponent<SpriteRenderer>();
     }
 
     void Start()
     {
-        rb = GetComponent<Rigidbody2D>();
-        sprite = GetComponent<SpriteRenderer>();
         anim = GetComponent<Animator>();
     }
 
-    private void Update()
+    void Update()
     {
+        //대시
+        if (Input.GetKeyDown(KeyCode.Space) && dashCooldownTimer <= 0f && move != Vector2.zero)
+        {
+            isDashing = true;
+            isInvincible = true;
+            dashDirection = move;
+            dashTime = dashDuration;
+            dashCooldownTimer = dashCooldown;
+
+            anim.SetBool("Dash", true);
+
+            CreateDashEffect(); // 이펙트 생성
+        }
+
+
+        // 쿨다운 감소
+        if (dashCooldownTimer > 0f)
+            dashCooldownTimer -= Time.deltaTime;
+
+        // 이동 입력
         move = Vector2.zero;
 
         if (Input.GetKey(KeyCode.A)) move += Vector2.left;
@@ -64,62 +69,67 @@ public class Player : MonoBehaviour
 
         move = move.normalized;
 
+        // 방향에 따라 뒤집기
         if (move.x < 0) sprite.flipX = true;
         else if (move.x > 0) sprite.flipX = false;
 
-        // 쿨다운 타이머 감소
-        if (dashCooldownTimer > 0f)
-            dashCooldownTimer -= Time.deltaTime;
 
-        if (!isDashing)
+
+        // 애니메이션
+        anim.SetBool("Move", move.magnitude > 0);
+
+        // 대시 입력
+        if (Input.GetKeyDown(KeyCode.Space) && dashCooldownTimer <= 0f && move != Vector2.zero)
         {
-            move = Vector2.zero;
+            isDashing = true;
+            isInvincible = true;
+            dashDirection = move;
+            dashTime = dashDuration;
+            dashCooldownTimer = dashCooldown;
 
-            if (Input.GetKey(KeyCode.A)) move += Vector2.left;
-            if (Input.GetKey(KeyCode.D)) move += Vector2.right;
-            if (Input.GetKey(KeyCode.W)) move += Vector2.up;
-            if (Input.GetKey(KeyCode.S)) move += Vector2.down;
-
-            move = move.normalized;
-
-            if (move.x < 0) sprite.flipX = true;
-            else if (move.x > 0) sprite.flipX = false;
-
-            // 애니메이션
-            if (move.magnitude > 0)
-            {
-                GetComponent<Animator>().SetTrigger("Move");
-            }
-            else
-            {
-                GetComponent<Animator>().SetTrigger("Stop");
-            }
-
-            anim.SetBool("Move", move.magnitude > 0);
-
-            if (Input.GetKeyDown(KeyCode.Space) && dashCooldownTimer <= 0f && move != Vector2.zero)
-            {
-                isDashing = true;
-                isInvincible = true;
-                dashDirection = move;
-                dashTime = dashDuration;
-                dashCooldownTimer = dashCooldown;
-
-                anim.SetBool("Dash", true);
-
-                DashEffect.gameObject.SetActive(true);
-                speed = 12;
-                
-            }
+            anim.SetBool("Dash", true);
         }
 
-        //총알 발사
+        // 총알 발사
         if (Input.GetMouseButtonDown(0))
         {
             Shoot();
         }
     }
-    //발사
+
+    void FixedUpdate()
+    {
+        if (isDashing)
+        {
+            dashTime -= Time.fixedDeltaTime;
+            rb.MovePosition(rb.position + dashDirection * dashSpeed * Time.fixedDeltaTime);
+
+            if (dashTime <= 0f)
+            {
+                isDashing = false;
+                isInvincible = false;
+                anim.SetBool("Dash", false);
+            }
+        }
+        else
+        {
+            rb.MovePosition(rb.position + move * speed * Time.fixedDeltaTime);
+        }
+    }
+
+
+    void CreateDashEffect()
+    {
+        Debug.Log("Dash");
+        GameObject effect = Instantiate(dashEffectPrefab, transform.position, Quaternion.identity);
+
+        // SpriteRenderer 상태 복사
+        SpriteRenderer playerSprite = GetComponent<SpriteRenderer>();
+        DashEffect dashEffect = effect.GetComponent<DashEffect>();
+
+    }
+
+
     void Shoot()
     {
         if (bulletPrefab == null)
@@ -138,29 +148,9 @@ public class Player : MonoBehaviour
             return;
         }
 
-        bullet.Direction = new Vector2(1, 0);
-    }
-
-
-    private void FixedUpdate()
-    {
-        if (isDashing)
-        {
-            dashTime -= Time.fixedDeltaTime;
-
-            if (dashTime <= 0f)
-            {
-                isDashing = false;
-                isInvincible = false;
-                anim.SetBool("Dash", false);
-                rb.MovePosition(rb.position + move * Time.fixedDeltaTime * speed * 2.5f);
-            }
-        }
-        else
-        {
-            rb.MovePosition(rb.position + move * Time.fixedDeltaTime * speed);
-        }
-
+        Vector3 mouseWorldPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+        Vector2 direction = (mouseWorldPos - transform.position).normalized;
+        bullet.Direction = direction;
     }
 
     private void OnTriggerEnter2D(Collider2D collision)
@@ -169,15 +159,11 @@ public class Player : MonoBehaviour
         {
             ItemObject item = collision.GetComponent<ItemObject>();
 
-           // score += item.GetPoint();
+            // 아이템 처리 예시
+            // GameDataManager.instance.playerData.colectedItems.Add(item.GetItem());
+            // GameDataManager.instance.SaveData(GameDataManager.instance.playerData);
 
-           // GameDataManager.instance.playerData.colectedItems.Add(item.GetItem());
-
-            //scoreText.text = score.ToString();
             Destroy(collision.gameObject);
-
-            GameDataManager.instance.SaveData(GameDataManager.instance.playerData);
         }
     }
 }
-
