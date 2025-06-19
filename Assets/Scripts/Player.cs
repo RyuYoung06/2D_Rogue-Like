@@ -61,12 +61,9 @@ public class Player : MonoBehaviour
 
         // 이동 입력
         move = Vector2.zero;
-
-        if (Input.GetKey(KeyCode.A)) move += Vector2.left;
-        if (Input.GetKey(KeyCode.D)) move += Vector2.right;
-        if (Input.GetKey(KeyCode.W)) move += Vector2.up;
-        if (Input.GetKey(KeyCode.S)) move += Vector2.down;
-
+        move.x = Input.GetAxisRaw("Horizontal"); // A, D 또는 ←, →
+        move.y = Input.GetAxisRaw("Vertical");   // W, S 또는 ↑, ↓
+        move = move.normalized; // 대각선 이동 시 속도 보정
         move = move.normalized;
 
         // 방향에 따라 뒤집기
@@ -76,7 +73,18 @@ public class Player : MonoBehaviour
 
 
         // 애니메이션
-        anim.SetBool("Move", move.magnitude > 0);
+        move.x = Input.GetAxisRaw("Horizontal"); // -1 (왼쪽), 0, 1 (오른쪽)
+        move.y = Input.GetAxisRaw("Vertical");   // -1 (아래), 0, 1 (위)
+
+        move = move.normalized; // 대각선 이동 시 속도 일정하게 유지
+
+        // 애니메이터에 방향 넘겨주기
+        anim.SetFloat("MoveX", move.x);
+        anim.SetFloat("MoveY", move.y);
+
+        // 캐릭터가 움직이고 있을 때만 isMoving을 true로
+        bool isMoving = move != Vector2.zero;
+        anim.SetBool("isMoving", isMoving);
 
         // 대시 입력
         if (Input.GetKeyDown(KeyCode.Space) && dashCooldownTimer <= 0f && move != Vector2.zero)
