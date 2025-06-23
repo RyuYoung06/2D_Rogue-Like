@@ -1,32 +1,38 @@
 using System.Collections;
-using System.Collections.Generic;
-using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 
+[RequireComponent(typeof(Rigidbody2D), typeof(SpriteRenderer))]
 public class Enemy : MonoBehaviour
 {
     public float speed = 3f;
 
-    GameObject target;
+    bool isLive;
+
+    private Rigidbody2D rb;
+
+    private GameObject target;
+    private SpriteRenderer sprite;
 
     private void Start()
     {
-        target = GameObject.Find("Player");
+        target = GameObject.FindWithTag("Player");
     }
 
-    private void FixedUpdate()
+    void Awake()
     {
-        Vector2 direction = target.transform.position - transform.position;
+        rb = GetComponent<Rigidbody2D>();
+        sprite = GetComponent<SpriteRenderer>();
+    }
 
-        transform.Translate(direction.normalized * speed * Time.fixedDeltaTime);
+    void FixedUpdate()
+    {
+        if (target == null) return;
+        
+        Vector2 dirVec = (target.transform.position - (Vector3)rb.position);
+        Vector2 nextVec = dirVec.normalized * speed * Time.fixedDeltaTime;
 
-        if(direction.x < 0)
-        {
-            GetComponent<SpriteRenderer>().flipX = true;
-        }
-        if (direction.x > 0)
-        {
-            GetComponent<SpriteRenderer>().flipX = false;
-        }
+        rb.MovePosition(rb.position + nextVec);
+
+        sprite.flipX = dirVec.x < 0;
     }
 }
