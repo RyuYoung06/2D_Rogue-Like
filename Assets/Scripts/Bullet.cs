@@ -4,35 +4,12 @@ using UnityEngine;
 
 public class Bullet : MonoBehaviour
 {
-    public float speed = 10f;
-    public float damage = 1f;
-    Vector2 direction;
+    public float damage;
+    public int per;
 
-    public Vector2 Direction
+    public void Init(float damage, int per)
     {
-        set
-        {
-            direction = value.normalized;
-        }
-    }
-
-    // Start is called before the first frame update
-    void Start()
-    {
-
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        transform.Translate(direction * speed * Time.deltaTime);
-    }
-
-    private void OnTriggerEnter2D(Collider2D collision)
-    {
-        if(collision.tag == "Wall")
-        {
-            Destroy(gameObject);
-        }
+        this.damage = damage;
+        this.per = per;
     }
 }
