@@ -3,30 +3,35 @@ using System.Collections;
 
 public class RoomTrigger : MonoBehaviour
 {
-    public DoorController[] doors;
-    public float doorCloseDelay = 1f; // ´İÈ÷±â±îÁö µô·¹ÀÌ ½Ã°£ (ÃÊ)
-
-    private bool triggered = false;
+    public Room room;
+    public float closeDelay = 0.5f; // ë¬¸ ë‹«ëŠ” ë”œë ˆì´(ì´ˆ)
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        if (triggered) return;
-
         if (other.CompareTag("Player"))
         {
-            triggered = true;
-            Debug.Log("ÇÃ·¹ÀÌ¾î°¡ ¹æ¿¡ µé¾î¿È");
-            StartCoroutine(CloseDoorsAfterDelay());
+            StartCoroutine(CloseDoorsWithDelay());
+            room.OnPlayerEnter();
         }
     }
 
-    private IEnumerator CloseDoorsAfterDelay()
+    private void OnTriggerExit2D(Collider2D other)
     {
-        yield return new WaitForSeconds(doorCloseDelay);
-
-        foreach (DoorController door in doors)
+        if (other.CompareTag("Player"))
         {
-            door.CloseDoor();
+            foreach (var door in room.doors)
+            {
+                door.SetTriggerMode(false); // ë¬¸ì„ ë²½ì²˜ëŸ¼ ë§Œë“¦
+            }
+        }
+    }
+
+    IEnumerator CloseDoorsWithDelay()
+    {
+        yield return new WaitForSeconds(closeDelay);
+        foreach (var door in room.doors)
+        {
+            door.SetTriggerMode(false); // ë¬¸ì„ ë²½ì²˜ëŸ¼ ë§Œë“¦
         }
     }
 }

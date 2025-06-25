@@ -5,8 +5,15 @@ using UnityEngine;
 public class Enemy : MonoBehaviour
 {
     public float speed = 3f;
-    public float attackRange = 3.0f; // °ø°İ °Å¸®
+    public float attackRange = 3.0f; // ì ì˜ ê³µê²© ë²”ìœ„
     public Rigidbody2D target;
+    public float hp = 10f; // ì ì˜ ì²´ë ¥
+    public float attackPower = 2f; // ì ì˜ ê³µê²©ë ¥
+    public GameObject damageTextPrefab; // ì¸ìŠ¤í™í„°ì—ì„œ í”„ë¦¬íŒ¹ í• ë‹¹
+    public Transform damageTextSpawnPoint; // (ì„ íƒ) í…ìŠ¤íŠ¸ê°€ ëœ° ìœ„ì¹˜
+    public Room room; // Room ì°¸ì¡°
+    public bool isActive = false; // ì›€ì§ì„ í™œì„±í™” í”Œë˜ê·¸
+    public GameObject coinPrefab; // Inspectorì—ì„œ ì½”ì¸ í”„ë¦¬íŒ¹ í• ë‹¹
 
     private bool isLive = true;
 
@@ -15,7 +22,7 @@ public class Enemy : MonoBehaviour
     private Animator anim;
 
     private bool isAttacking = false;
-    private float attackCooldown = 5.0f; // °ø°İ Äğ´Ù¿î ½Ã°£ (ÃÊ)
+    private float attackCooldown = 5.0f; // ê³µê²© ì¿¨ë‹¤ìš´ (ì´ˆ)
     private float lastAttackTime = 0f;
 
     private void Awake()
@@ -23,20 +30,35 @@ public class Enemy : MonoBehaviour
         rb = GetComponent<Rigidbody2D>();
         spriter = GetComponent<SpriteRenderer>();
         anim = GetComponent<Animator>();
+
+        // ìë™ìœ¼ë¡œ Playerì˜ Rigidbody2Dë¥¼ ì°¾ì•„ì„œ í• ë‹¹
+        if (target == null)
+        {
+            GameObject playerObj = GameObject.FindWithTag("Player");
+            if (playerObj != null)
+            {
+                target = playerObj.GetComponent<Rigidbody2D>();
+            }
+        }
+    }
+
+    void OnEnable()
+    {
+        isActive = false; // ì¬í™œì„±í™”ë  ë•Œ í•­ìƒ ë¹„í™œì„±í™” ìƒíƒœë¡œ ì‹œì‘
     }
 
     private void FixedUpdate()
     {
+        if (!isActive) return;
+
         if (!isLive || target == null)
             return;
 
         Vector2 dirVec = target.position - rb.position;
         float distance = dirVec.magnitude;
 
-        // ÇöÀç ¾Ö´Ï¸ŞÀÌÅÍ »óÅÂ È®ÀÎ (0Àº ±âº» ·¹ÀÌ¾î)
         AnimatorStateInfo state = anim.GetCurrentAnimatorStateInfo(0);
 
-        // °ø°İ ¾Ö´Ï¸ŞÀÌ¼Ç ÁßÀÌ¸é ÀÌµ¿ ¹× Ãß°¡ °ø°İ Æ®¸®°Å ¹æÁö
         if (state.IsName("Attack"))
         {
             isAttacking = true;
@@ -52,7 +74,6 @@ public class Enemy : MonoBehaviour
         {
             anim.SetBool("isWalking", false);
 
-            // Äğ´Ù¿î Ã¼Å© ÈÄ °ø°İ Æ®¸®°Å
             if (!isAttacking && Time.time >= lastAttackTime + attackCooldown)
             {
                 anim.SetTrigger("Attack");
@@ -62,7 +83,6 @@ public class Enemy : MonoBehaviour
         }
         else
         {
-            // °ø°İ¹üÀ§ ¹ÛÀÌ¸é ÀÌµ¿
             isAttacking = false;
             Vector2 nextVec = dirVec.normalized * speed * Time.fixedDeltaTime;
             rb.MovePosition(rb.position + nextVec);
@@ -79,9 +99,63 @@ public class Enemy : MonoBehaviour
         spriter.flipX = target.position.x < rb.position.x;
     }
 
-    // °ø°İ ¾Ö´Ï¸ŞÀÌ¼Ç Á¾·á ½Ã Animation Event·Î È£Ãâ
     public void OnAttackAnimationEnd()
     {
         isAttacking = false;
+        // ê³µê²© ì• ë‹ˆë©”ì´ì…˜ì´ ëë‚  ë•Œ í”Œë ˆì´ì–´ì—ê²Œ í”¼í•´ë¥¼ ì¤€ë‹¤
+        if (isLive && target != null)
+        {
+            Player player = target.GetComponent<Player>();
+            if (player != null)
+            {
+                player.TakeDamage(attackPower);
+                Debug.Log("ê³µê²©ì„±ê³µ");
+            }
+        }
+    }
+
+    public void TakeDamage(float damage)
+    {
+        if (!isLive) return;
+        hp -= damage;
+        ShowDamageText(damage);
+        Debug.Log($"ì  ë°ë¯¸ì§€: {damage}, ë‚¨ì€ HP: {hp}");
+        if (hp <= 0)
+        {
+            Die();
+        }
+    }
+
+    private void Die()
+    {
+        if (coinPrefab != null)
+        {
+            Instantiate(coinPrefab, transform.position, Quaternion.identity);
+        }
+        if (room != null)
+        {
+            room.OnEnemyDied(this);
+        }
+        gameObject.SetActive(false);
+    }
+
+    void ShowDamageText(float damage)
+    {
+        if (damageTextPrefab != null)
+        {
+            Vector3 spawnPos = damageTextSpawnPoint != null ? damageTextSpawnPoint.position : transform.position;
+            GameObject obj = Instantiate(damageTextPrefab, spawnPos, Quaternion.identity, damageTextPrefab.transform.parent);
+            DamageText dmgText = obj.GetComponent<DamageText>();
+            if (dmgText != null)
+                dmgText.SetText(damage);
+        }
+    }
+
+    void OnTriggerEnter2D(Collider2D collision)
+    {
+        if (!collision.CompareTag("Bullet"))
+            return;
+
+        TakeDamage(collision.GetComponent<Bullet>().damage);
     }
 }

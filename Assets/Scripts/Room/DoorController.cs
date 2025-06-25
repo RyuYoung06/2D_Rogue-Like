@@ -1,25 +1,32 @@
 using UnityEngine;
 
-public class DoorController : MonoBehaviour
+public class Door : MonoBehaviour
 {
-    private BoxCollider2D boxCollider;
-    private SpriteRenderer spriteRenderer;
+    public Collider2D col;
 
-    private void Awake()
+    void Awake()
     {
-        boxCollider = GetComponent<BoxCollider2D>();
-        spriteRenderer = GetComponent<SpriteRenderer>();
+        if (col == null)
+            col = GetComponent<Collider2D>();
     }
 
-    public void OpenDoor()
+    public void Open()
     {
-        if (boxCollider != null) boxCollider.isTrigger = true;
-        if (spriteRenderer != null) spriteRenderer.color = new Color(0.5f, 0.5f, 0.5f); // ��Ӱ�
+        Debug.Log("Door 열림");
+        if (col != null)
+        {
+            col.enabled = false; // 문 열릴 때 Collider 비활성화
+        }
+        // 문 열리는 애니메이션/사운드 등 추가 가능
     }
 
-    public void CloseDoor()
+    public void Close()
     {
-        if (boxCollider != null) boxCollider.isTrigger = false;
-        if (spriteRenderer != null) spriteRenderer.color = Color.white;
+        col.enabled = true; // 문 닫힐 때 Collider 활성화
+    }
+
+    public void SetTriggerMode(bool isTrigger)
+    {
+        col.isTrigger = isTrigger;
     }
 }

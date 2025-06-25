@@ -16,12 +16,16 @@ public class GameDataManager : MonoBehaviour
 {
     public static GameDataManager instance;
     public PlayerData playerData;
+    public PoolManager poolManager;
+    public int coin = 0;
+
     private void Awake()
     {
         if (instance == null)
         {
             instance = this;
             DontDestroyOnLoad(gameObject);
+            LoadCoin();
         }
         else
         {
@@ -34,7 +38,7 @@ public class GameDataManager : MonoBehaviour
         string filePath = Application.persistentDataPath + "/player_data.json";
         string json = JsonUtility.ToJson(playerData, true);
         System.IO.File.WriteAllText(filePath, json);
-        Debug.Log("°ÔÀÓ µ¥ÀÌÅÍ ÀúÀåµÊ: " + json);
+        Debug.Log("ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½: " + json);
 
     }
     public PlayerData LoadData()
@@ -44,12 +48,12 @@ public class GameDataManager : MonoBehaviour
         {
             string json = System.IO.File.ReadAllText(filePath);
             PlayerData playerData = JsonUtility.FromJson<PlayerData>(json);
-            Debug.Log("°ÔÀÓ µ¥ÀÌÅÍ ·ÎµåµÊ: " + json);
+            Debug.Log("ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Îµï¿½ï¿½: " + json);
             return playerData;
         }
         else
         {
-            Debug.LogWarning("ÀúÀåµÈ °ÔÀÓ µ¥ÀÌÅÍ°¡ ¾ø½À´Ï´Ù.");
+            Debug.LogWarning("ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Í°ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï´ï¿½.");
             return new PlayerData();
         }
     }
@@ -85,5 +89,28 @@ public class GameDataManager : MonoBehaviour
             SaveData(playerData);
         }
         SceneManager.LoadScene("GameOver");
+    }
+
+    void SomeFunction()
+    {
+        // PoolManagerì˜ ì‹±ê¸€í„´ ì¸ìŠ¤í„´ìŠ¤ ì‚¬ìš©
+        //PoolManager.Instance.ReturnBullet(someBullet);
+    }
+
+    public void AddCoin(int value)
+    {
+        coin += value;
+        SaveCoin();
+    }
+
+    public void SaveCoin()
+    {
+        PlayerPrefs.SetInt("Coin", coin);
+        PlayerPrefs.Save();
+    }
+
+    public void LoadCoin()
+    {
+        coin = PlayerPrefs.GetInt("Coin", 0);
     }
 }

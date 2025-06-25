@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class Player : MonoBehaviour
 {
@@ -8,12 +9,16 @@ public class Player : MonoBehaviour
     public float dashSpeed = 10f;
     public float dashDuration = 0.2f;
     public float dashCooldown = 1f;
+    public float hp = 20f; // í”Œë ˆì´ì–´ ì²´ë ¥
+    public float attackPower = 5f; // í”Œë ˆì´ì–´ ê³µê²©ë ¥
+    public GameObject damageTextPrefab; // ì¸ìŠ¤í™í„°ì—ì„œ í”„ë¦¬íŒ¹ í• ë‹¹
+    public Transform damageTextSpawnPoint; // (ì„ íƒ) í…ìŠ¤íŠ¸ê°€ ëœ° ìœ„ì¹˜
 
     private Rigidbody2D rb;
     private SpriteRenderer sprite;
     private Animator anim;
 
-    private Vector2 move; // ÇöÀç ÇÁ·¹ÀÓ ÀÌµ¿ ¹æÇâ
+    private Vector2 move; // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ìµï¿½ ï¿½ï¿½ï¿½ï¿½
     private bool isDashing = false;
     private float lastDashTime = -Mathf.Infinity;
 
@@ -32,7 +37,7 @@ public class Player : MonoBehaviour
             float moveY = Input.GetAxisRaw("Vertical");
             move = new Vector2(moveX, moveY).normalized;
 
-            // ¾Ö´Ï¸ŞÀÌ¼Ç ¹æÇâ ¹× ÀÌµ¿ ¿©ºÎ ¼³Á¤
+            // ï¿½Ö´Ï¸ï¿½ï¿½Ì¼ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½Ìµï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
             if (move != Vector2.zero)
             {
                 anim.SetBool("isMoving", true);
@@ -47,7 +52,7 @@ public class Player : MonoBehaviour
             }
         }
 
-        // ´ë½Ã ÀÔ·Â
+        // ï¿½ï¿½ï¿½ ï¿½Ô·ï¿½
         if (Input.GetKeyDown(KeyCode.Space) && Time.time >= lastDashTime + dashCooldown)
         {
             StartCoroutine(Dash());
@@ -68,16 +73,63 @@ public class Player : MonoBehaviour
         isDashing = true;
         lastDashTime = Time.time;
 
-        rb.velocity = move * dashSpeed;
+        // moveï¿½ï¿½ 0ï¿½Ì¸ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½
+        Vector2 dashDirection = move != Vector2.zero ? move : new Vector2(anim.GetFloat("LastMoveX"), anim.GetFloat("LastMoveY"));
+        rb.velocity = dashDirection * dashSpeed;
 
-        anim.SetFloat("MoveX", move.x);
-        anim.SetFloat("MoveY", move.y);
+        anim.SetFloat("MoveX", dashDirection.x);
+        anim.SetFloat("MoveY", dashDirection.y);
         anim.SetBool("isDashing", true);
+        anim.SetBool("isMoving", true);
 
         yield return new WaitForSeconds(dashDuration);
 
         rb.velocity = Vector2.zero;
         isDashing = false;
+        move = Vector2.zero;
+
         anim.SetBool("isDashing", false);
+        anim.SetBool("isMoving", false);
+    }
+
+    public void TakeDamage(float damage)
+    {
+        hp -= damage;
+        ShowDamageText(damage);
+        Debug.Log($"í”Œë ˆì´ì–´ ë°ë¯¸ì§€: {damage}, ë‚¨ì€ HP: {hp}");
+        if (hp <= 0)
+        {
+            Die();
+        }
+    }
+
+    void ShowDamageText(int damage)
+    {
+        if (damageTextPrefab != null)
+        {
+            // ì›”ë“œ ê³µê°„ Canvasë¼ë©´ Instantiate ìœ„ì¹˜ë¥¼ transform.positionë¡œ!
+            GameObject obj = Instantiate(damageTextPrefab, damageTextSpawnPoint != null ? damageTextSpawnPoint.position : transform.position, Quaternion.identity);
+            DamageText dmgText = obj.GetComponent<DamageText>();
+            if (dmgText != null)
+                dmgText.SetText(damage);
+        }
+    }
+
+    private void Die()
+    {
+        Debug.Log("í”Œë ˆì´ì–´ê°€ ì‚¬ë§í–ˆìŠµë‹ˆë‹¤.");
+        Debug.Log("ì£½ì—ˆìŠµë‹ˆë‹¤");
+    }
+    
+    void ShowDamageText(float damage)
+    {
+        if (damageTextPrefab != null)
+        {
+            Vector3 spawnPos = damageTextSpawnPoint != null ? damageTextSpawnPoint.position : transform.position;
+            GameObject obj = Instantiate(damageTextPrefab, spawnPos, Quaternion.identity, damageTextPrefab.transform.parent);
+            DamageText dmgText = obj.GetComponent<DamageText>();
+            if (dmgText != null)
+                dmgText.SetText(damage);
+        }
     }
 }
